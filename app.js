@@ -3,6 +3,16 @@ const layersList = document.querySelector('#layersList');
 const tools = document.querySelectorAll('.tool');
 const insertButtons = document.querySelectorAll('.insert-button');
 const toast = document.querySelector('#toast');
+const selectionBox = document.createElement('div');
+selectionBox.className = 'selection-box';
+selectionBox.innerHTML = `
+  <button class="resize-handle nw" data-resize="nw" aria-label="Resize from top left"></button>
+  <button class="resize-handle ne" data-resize="ne" aria-label="Resize from top right"></button>
+  <button class="resize-handle sw" data-resize="sw" aria-label="Resize from bottom left"></button>
+  <button class="resize-handle se" data-resize="se" aria-label="Resize from bottom right"></button>
+  <button class="shape-handle" aria-label="Cycle selected shape">◇</button>
+`;
+canvas.appendChild(selectionBox);
 const inspector = {
   type: document.querySelector('#selectedType'),
   name: document.querySelector('#layerName'),
@@ -39,6 +49,7 @@ const layerCounts = {
 let selectedNode = document.querySelector('[data-id="frame"]');
 let activeTool = 'select';
 let dragState = null;
+let resizeState = null;
 let toastTimer = null;
 
 function showToast(message) {
@@ -69,6 +80,21 @@ function readableColor(node) {
   const match = color.match(/\d+/g);
   if (!match) return '#7c3aed';
   return `#${match.slice(0, 3).map((value) => Number(value).toString(16).padStart(2, '0')).join('')}`;
+}
+
+function updateSelectionBox() {
+  if (!selectedNode || !selectedNode.isConnected) {
+    selectionBox.classList.remove('show');
+    return;
+  }
+
+  const nodeRect = selectedNode.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+  selectionBox.style.left = `${nodeRect.left - canvasRect.left}px`;
+  selectionBox.style.top = `${nodeRect.top - canvasRect.top}px`;
+  selectionBox.style.width = `${nodeRect.width}px`;
+  selectionBox.style.height = `${nodeRect.height}px`;
+  selectionBox.classList.add('show');
 }
 
 function renderLayers() {
@@ -130,6 +156,7 @@ function selectNode(node) {
   selectedNode.classList.add('selected');
   updateInspector(selectedNode);
   renderLayers();
+  updateSelectionBox();
 }
 
 function setActiveTool(toolName) {
@@ -314,12 +341,61 @@ function drag(event) {
   dragState.node.style.left = `${Math.max(0, Math.round(x))}px`;
   dragState.node.style.top = `${Math.max(0, Math.round(y))}px`;
   updateInspector(dragState.node);
+  updateSelectionBox();
 }
 
 function stopDrag(event) {
   if (!dragState) return;
   dragState.node.releasePointerCapture(event.pointerId);
   dragState = null;
+}
+
+function startResize(event) {
+  const handle = event.target.closest('[data-resize]');
+  if (!handle || !selectedNode) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  const nodeRect = selectedNode.getBoundingClientRect();
+  const parentRect = (selectedNode.offsetParent || canvas).getBoundingClientRect();
+  resizeState = {
+    handle: handle.dataset.resize,
+    handleElement: handle,
+    node: selectedNode,
+    startX: event.clientX,
+    startY: event.clientY,
+    startLeft: nodeRect.left - parentRect.left,
+    startTop: nodeRect.top - parentRect.top,
+    startWidth: nodeRect.width,
+    startHeight: nodeRect.height,
+  };
+  handle.setPointerCapture(event.pointerId);
+}
+
+function resizeSelected(event) {
+  if (!resizeState) return;
+
+  const dx = event.clientX - resizeState.startX;
+  const dy = event.clientY - resizeState.startY;
+  const pullsLeft = resizeState.handle.includes('w');
+  const pullsTop = resizeState.handle.includes('n');
+  const nextWidth = Math.max(32, resizeState.startWidth + (pullsLeft ? -dx : dx));
+  const nextHeight = Math.max(32, resizeState.startHeight + (pullsTop ? -dy : dy));
+  const nextLeft = pullsLeft ? resizeState.startLeft + resizeState.startWidth - nextWidth : resizeState.startLeft;
+  const nextTop = pullsTop ? resizeState.startTop + resizeState.startHeight - nextHeight : resizeState.startTop;
+
+  resizeState.node.style.left = `${Math.max(0, Math.round(nextLeft))}px`;
+  resizeState.node.style.top = `${Math.max(0, Math.round(nextTop))}px`;
+  resizeState.node.style.width = `${Math.round(nextWidth)}px`;
+  resizeState.node.style.height = `${Math.round(nextHeight)}px`;
+  updateInspector(resizeState.node);
+  updateSelectionBox();
+}
+
+function stopResize(event) {
+  if (!resizeState) return;
+  resizeState.handleElement.releasePointerCapture?.(event.pointerId);
+  resizeState = null;
 }
 
 function applyInspectorChange(event) {
@@ -347,6 +423,7 @@ function applyInspectorChange(event) {
   if (inspector.shape.value === 'rounded') selectedNode.style.borderRadius = `${inspector.radius.value}px`;
   if (!inspector.text.disabled) setEditableText(selectedNode, inspector.text.value);
   renderLayers();
+  updateSelectionBox();
 }
 
 function cycleSelectedShape() {
@@ -356,6 +433,7 @@ function cycleSelectedShape() {
   inspector.shape.value = nextShape;
   applyShapeKind(selectedNode, nextShape);
   updateInspector(selectedNode);
+  updateSelectionBox();
   showToast(`Shape changed to ${nextShape}`);
 }
 
@@ -379,6 +457,15 @@ insertButtons.forEach((button) => {
     setActiveTool(toolName);
     addLayer(toolName);
   });
+});
+selectionBox.addEventListener('pointerdown', startResize);
+selectionBox.addEventListener('pointermove', resizeSelected);
+selectionBox.addEventListener('pointerup', stopResize);
+selectionBox.addEventListener('pointercancel', stopResize);
+selectionBox.querySelector('.shape-handle').addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  cycleSelectedShape();
 });
 canvas.addEventListener('pointerdown', startDrag);
 canvas.addEventListener('pointermove', drag);
@@ -413,6 +500,7 @@ document.querySelector('#addLayerButton').addEventListener('click', () => addLay
 document.querySelector('#deleteLayerButton').addEventListener('click', deleteSelectedLayer);
 document.querySelector('#presentButton').addEventListener('click', () => showToast('Presentation preview opened'));
 document.querySelector('#shareButton').addEventListener('click', () => showToast('Share link copied to clipboard'));
+window.addEventListener('resize', updateSelectionBox);
 Object.values(inspector).forEach((input) => {
   if (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA' || input.tagName === 'SELECT') {
     input.addEventListener('input', applyInspectorChange);
