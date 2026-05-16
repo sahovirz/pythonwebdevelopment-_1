@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PixelBoard — Figma Style Web App</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar" aria-label="Application toolbar">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          <div>
+            <strong>PixelBoard</strong>
+            <small>Design file / Landing page draft</small>
+          </div>
+        </div>
+
+        <nav class="tool-tabs" aria-label="Design tools">
+          <button class="tool active" data-tool="select" title="Select tool">↖ Select</button>
+          <button class="tool" data-tool="frame" title="Frame tool">▣ Frame</button>
+          <button class="tool" data-tool="rect" title="Rectangle tool">▭ Rect</button>
+          <button class="tool" data-tool="shape" title="Shape tool">◇ Shape</button>
+          <button class="tool" data-tool="text" title="Text tool">T Text</button>
+          <button class="tool" data-tool="comment" title="Comment tool">✎ Comment</button>
+        </nav>
+
+        <div class="actions">
+          <button id="presentButton" class="ghost">Present</button>
+          <button id="shareButton" class="primary">Share</button>
+        </div>
+      </header>
+
+      <aside class="left-panel" aria-label="Layers and assets">
+        <section class="panel-card">
+          <div class="panel-heading">
+            <h2>Pages</h2>
+            <button aria-label="Add page">+</button>
+          </div>
+          <button class="page-row active">Website concept</button>
+          <button class="page-row">Component library</button>
+        </section>
+
+        <section class="panel-card insert-card">
+          <div class="panel-heading">
+            <h2>Insert</h2>
+            <span class="mini-help">Click or place on canvas</span>
+          </div>
+          <div class="insert-grid" aria-label="Insert new design layer">
+            <button class="insert-button" data-insert="frame">▣ Frame</button>
+            <button class="insert-button" data-insert="rect">▭ Rectangle</button>
+            <button class="insert-button" data-insert="ellipse">◯ Ellipse</button>
+            <button class="insert-button" data-insert="shape">◇ Shape</button>
+            <button class="insert-button" data-insert="text">T Text</button>
+            <button class="insert-button" data-insert="comment">✎ Comment</button>
+          </div>
+        </section>
+
+        <section class="panel-card layers-card">
+          <div class="panel-heading">
+            <h2>Layers</h2>
+            <button id="addLayerButton" aria-label="Add rectangle layer">+</button>
+          </div>
+          <div id="layersList" class="layers-list" aria-live="polite"></div>
+        </section>
+      </aside>
+
+      <main class="canvas-wrap">
+        <div class="canvas-toolbar">
+          <span class="status-pill">100%</span>
+          <span class="status-pill">Grid 8px</span>
+          <span id="hintText">Drag layers, resize with corner handles, or tap ◇ to reshape.</span>
+        </div>
+
+        <section id="canvas" class="canvas" aria-label="Design canvas">
+          <article class="frame" data-id="frame" data-name="Hero frame" data-type="Frame" tabindex="0">
+            <div class="frame-label">Desktop / 1440</div>
+            <div class="node hero-card" data-id="hero-card" data-name="Hero card" data-type="Card" tabindex="0">
+              <p class="eyebrow">New workspace</p>
+              <h1 data-editable="true">Design together, faster.</h1>
+              <p data-editable="true">A collaborative canvas with layers, comments, components, and ready-to-ship visual polish.</p>
+              <button class="mock-button">Start designing</button>
+            </div>
+            <div class="node shape circle" data-id="gradient-orb" data-name="Gradient orb" data-type="Ellipse" tabindex="0"></div>
+            <div class="node shape square" data-id="feature-tile" data-name="Feature tile" data-type="Rectangle" tabindex="0">
+              <span>Auto layout</span>
+            </div>
+            <div class="node comment-pin" data-id="comment-pin" data-name="Feedback note" data-type="Comment" tabindex="0">1</div>
+          </article>
+        </section>
+      </main>
+
+      <aside class="right-panel" aria-label="Design properties">
+        <section class="panel-card inspector-card">
+          <div class="panel-heading">
+            <h2>Design</h2>
+            <span id="selectedType">Frame</span>
+          </div>
+          <label>
+            Layer name
+            <input id="layerName" type="text" value="Hero frame" />
+          </label>
+          <div class="property-grid">
+            <label>X <input id="posX" type="number" value="0" /></label>
+            <label>Y <input id="posY" type="number" value="0" /></label>
+            <label>W <input id="widthInput" type="number" value="960" /></label>
+            <label>H <input id="heightInput" type="number" value="560" /></label>
+          </div>
+          <label>
+            Fill
+            <input id="fillInput" type="color" value="#7c3aed" />
+          </label>
+          <label>
+            Gradient preset
+            <select id="gradientInput">
+              <option value="none">Solid fill</option>
+              <option value="aurora">Aurora</option>
+              <option value="sunset">Sunset</option>
+              <option value="ocean">Ocean</option>
+              <option value="candy">Candy</option>
+              <option value="midnight">Midnight</option>
+            </select>
+          </label>
+          <label>
+            Shape style
+            <select id="shapeInput">
+              <option value="rectangle">Rectangle</option>
+              <option value="rounded">Rounded</option>
+              <option value="pill">Pill</option>
+              <option value="circle">Circle</option>
+              <option value="diamond">Diamond</option>
+              <option value="triangle">Triangle</option>
+            </select>
+          </label>
+          <label>
+            Corner radius
+            <input id="radiusInput" type="range" min="0" max="80" value="24" />
+          </label>
+          <label>
+            Text / comment copy
+            <textarea id="textInput" rows="4" placeholder="Select a text or comment layer"></textarea>
+          </label>
+          <button id="deleteLayerButton" class="danger-action">Delete selected layer</button>
+        </section>
+
+        <section class="panel-card">
+          <div class="panel-heading">
+            <h2>Prototype</h2>
+            <span class="badge">Live</span>
+          </div>
+          <div class="prototype-row">
+            <span>On click</span>
+            <strong>Navigate → Signup</strong>
+          </div>
+          <div class="prototype-row">
+            <span>Animation</span>
+            <strong>Smart dissolve</strong>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
